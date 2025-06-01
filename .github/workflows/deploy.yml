@@ -47,11 +47,16 @@ jobs:
         port: ${{ secrets.PORT }}
         script: |
           cd /opt/telegram-bot
-          
-          # Clone repository if it doesn't exist
-          if [ ! -d ".git" ]; then
-            git clone ${{ secrets.REPO_URL }} .
-          fi
-          
+
+          # Clone into a temporary directory
+          TEMP_DIR=$(mktemp -d)
+
+          git clone ${{ secrets.REPO_URL }} "$TEMP_DIR"
+
+          # Copy contents except .git into the target dir (preserves deploy.sh)
+          rsync -av --exclude='.git' "$TEMP_DIR/" /opt/telegram-bot/
+
+          # Clean up
+          rm -rf "$TEMP_DIR"
           # Run deployment script
           ./deploy.sh
